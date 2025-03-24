@@ -1,7 +1,6 @@
 from cmd import Cmd
 import argparse
-import logging
-import mysql.connector
+from .dbms.mysql import MySQL
 
 
 class DBBackupShell(Cmd):
@@ -11,8 +10,7 @@ class DBBackupShell(Cmd):
 
     def __init__(self):
         super().__init__()
-        self.connection = None
-        self.logger = logging.getLogger()
+        self._dbms = None
 
 
     def _get_connect_parser(self):
@@ -26,6 +24,12 @@ class DBBackupShell(Cmd):
         parser.add_argument("host")
         parser.add_argument("db", help="Name of the database")
         return parser
+    
+
+    def _determine_dbms(self, dbms: str):
+        if dbms == "mysql":
+            return MySQL()
+        raise NotImplementedError(f"'{dbms}' is not supported")
 
 
     def do_connect(self, arg: str):
@@ -37,28 +41,20 @@ class DBBackupShell(Cmd):
             return
         try:
             args = vars(parser.parse_args(args))
-        except SystemExit as e:
-            return 
-        self.logger.info("Connecting to database...")
-        try:
-            self.connection = mysql.connector.connect(
-                user=args["user"],
-                password=args["password"],
-                host=args["host"],
-                database=args["db"]
-            )
-        except mysql.connector.Error as e:
-            self.logger.error(e)
+        except SystemExit:
             return
-        self.logger.info("Connected")
-
+        try:
+            self.dbms = self._determine_dbms(args["dbms"])
+        except NotImplementedError as e:
+            print(e)
+            return
+        try:
+            self.dbms.connect(args["user"], args["password"], args["host"], args["db"])
+        except ConnectionError as e:
+            print(e)
+            return
 
 def main():
-    logging.basicConfig(
-        encoding="utf-8",
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s"
-    )
     DBBackupShell().cmdloop()
 
 
