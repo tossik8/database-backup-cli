@@ -1,18 +1,18 @@
-import mysql.connector
+from mysql.connector import MySQLConnection, connect, Error
 
 class MySQL:
 
     def __init__(self):
-        self._con = None
+        self._con: MySQLConnection = None
 
-    def connect(self, user, password, host, database):
+    def connect(self, user: str, password: str, host: str, database: str):
         try:
-            self._con = mysql.connector.connect(
+            self._con = connect(
                 user=user,
                 password=password,
                 host=host,
                 database=database
             )
-        except mysql.connector.Error as e:
+        except Error as e:
             raise ConnectionError(e) from e
         
