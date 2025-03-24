@@ -26,10 +26,11 @@ class DBBackupShell(Cmd):
         return parser
     
 
-    def _determine_dbms(self, dbms: str):
+    def _set_dbms(self, dbms: str):
         if dbms == "mysql":
-            return MySQL()
-        raise NotImplementedError(f"'{dbms}' is not supported")
+            self._dbms = MySQL()
+        else:
+            raise NotImplementedError(f"'{dbms}' is not supported")
 
 
     def do_connect(self, arg: str):
@@ -44,15 +45,19 @@ class DBBackupShell(Cmd):
         except SystemExit:
             return
         try:
-            self.dbms = self._determine_dbms(args["dbms"])
+            self._set_dbms(args["dbms"])
         except NotImplementedError as e:
             print(e)
             return
         try:
-            self.dbms.connect(args["user"], args["password"], args["host"], args["db"])
+            self._dbms.connect(args["user"], args["password"], args["host"], args["db"])
         except ConnectionError as e:
             print(e)
             return
+        
+
+    def do_full_backup(self, arg: str):
+        self._dbms.do_full_backup()
 
 
 def main():
